@@ -1,6 +1,8 @@
-# Calculateur de salaire d'Assistante Maternel
+# Calculateur de salaire d'Assistante Maternelle
 
-Calcul du salaire d'une assitante maternelle en fonction des heures de presence et du contrat
+Ce depot contient un programme python capable de calculer le salaire d'une ASM en fonction du contrat et des heures de presence effectuees.
+
+### Specifier le contrat
 
 ```python
 MaNounou = asm.contrat(
