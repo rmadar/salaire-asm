@@ -17,10 +17,16 @@ MaNounou = asm.contrat(
     # Cout des repas
     frais_repas           = 0.0,
 
-    # Nombre d'heures par jours
+    # Nombre d'heures par jour
     n_heures_jour         = 7,
+
+    # Jours de garde dans la semaine
     jours_semaine         = [0, 1, 1, 0, 1, 0, 0], 
+
+    # Nombre de semaines par an (en fonction de ses propres conges)
     n_semaines_an         = 45, 
+
+    # Nombre de mois utilise pour mensualiser
     n_mois_mensualisation = 12
 )
 ```
