@@ -36,3 +36,27 @@ Le calcul du cout mensualise ou encore des conges payes est ensuite fait en inte
 salaire_mensuel = MaNounou.cout_mensualise()
 conges_payes_mois = MaNounou.conges_payes_mensualises()
 ```
+
+```
+Cout mensuel        : 310.50 Euros
+Conges payes mensuel: 61.25 Euros
+```
+
+### Specifier une periode
+
+```python
+avril = asm.donnees_presence(date_debut = '20-04-01',
+                             date_fin = '20-04-30',
+                             heures_effectuees_par_jours = [10]*13,
+                             repas_pris_par_jours = [False]*13)
+```
+
+Un appel de la fonction `nounou.cout_reel_periode(avril)` donne directement:
+
+```
+Avril (2 semaines incompletes et 3 completes):
+  - 5 jours de fin de semaine
+  - 3x7 jours de semaines completes
+  - 4 jours de debut de semaine
+  - cout reel Avril si (sur)presence: 495.30 Euros
+```
