@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class donnees_presence:
   
   '''
@@ -7,15 +10,15 @@ class donnees_presence:
     - nombre de semaines completes / incompletes 
   '''
 
-
   def __init__(self,
                date_debut, date_fin,
                heures_effectuees_par_jours,
                repas_pris_par_jours,
+               jours_feries=0,
                nom_fichier_donnees=None):
       
       '''
-      date_debut, date_fin: 'JJ/MM/AA'
+      date_debut, date_fin: 'AA-MM-DD'
       heures_effectuees_par_jours: liste de float (len=nombre de jours ouvres)
       repas_pris_par_jours: liste de boolean (len=nombre de jours ouvres)
       nom_fichier_donnees: nom de fichier CSV - a implementer
@@ -24,6 +27,7 @@ class donnees_presence:
       # Info manuelles
       self.debut = date_debut
       self.fin = date_fin
+      self.jours_feries = jours_feries
       self.n_heures_jour = heures_effectuees_par_jours
       self.n_repas_jour = repas_pris_par_jours
 
@@ -31,18 +35,55 @@ class donnees_presence:
       if nom_fichier_donnees:
          self.lire_donnees(nom_fichier_donnees)
 
-      # Calcul
+      # Calcul jours/semaines entieres/terminees/entammees
+      self.n_jours = (np.datetime64(self.fin) - np.datetime64(self.debut)) / np.timedelta64(1,'D') + 1
       self.n_jours_ouvres = self.N_jours_ouvres()
+      self.n_jours_semaine1 = self.N_jours_semaine1()
+      self.n_jours_semaineN = self.N_jours_semaineN()
       self.n_semaines_completes = self.N_semaines_completes()
+      
+      # Coherence des donnees fournies
+      if self.n_jours_ouvres != len(self.n_heures_jour):
+         err = 'donnees_presence: Il y a {} jours ouvres ({} - {}), et {} horaires fournis.'
+         err = err.format(self.n_jours_ouvres, self.debut, self.fin, len(self.n_heures_jour))
+         raise NameError(err)
 
+      if self.n_jours_ouvres != len(self.n_repas_jour):
+         err = 'donnees_presence: Il y a {} jours ouvres ({} - {}), et {} info de repas.'
+         err = err.format(self.n_jours_ouvres, self.debut, self.fin, len(self.n_repas_jour))
+         raise NameError(err)
+        
 
   def N_jours_ouvres(self):
-      return 30
-  
+      return np.busday_count(self.debut, self.fin) - self.jours_feries
+
+
+  def N_jours_semaine1(self):
+      premier_lundi = np.busday_offset(self.debut, 0, roll='forward', weekmask='Mon')
+      dt = (np.datetime64(premier_lundi) - np.datetime64(self.debut)) / np.timedelta64(1,'D')
+      return dt
+
+    
+  def N_jours_semaineN(self):
+      dernier_dimanche = np.busday_offset(self.fin, 0, roll='backward', weekmask='Sun')
+      dt = (np.datetime64(self.fin) - np.datetime64(dernier_dimanche)) / np.timedelta64(1,'D')
+      return dt
+    
+    
   def N_semaines_completes(self):
-      return 4
+      Ntot = self.n_jours 
+      Ndebut = self.N_jours_semaine1()
+      Nfin = self.N_jours_semaineN()
+      Nsemaines = (Ntot - (Ndebut+Nfin)) // 7
+      if (Ntot - (Ndebut+Nfin)) % 7 !=0 :
+         raise NameError('donnees_presence(): Nombre de semaine non entiere, attention!')
+      else: 
+         return Nsemaines
+      
 
-
+  def lire_donnees(self, nom_fichier):
+      pass
+    
 
 class contrat:
 
