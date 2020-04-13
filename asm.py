@@ -74,15 +74,18 @@ class donnees_presence:
       pass
     
 
+
 class contrat:
 
   def __init__(self, 
-               taux_horaire=3.5, frais_entretient=3.10, frais_repas=4.0,
+               taux_horaire=3.5, frais_entretien=3.10,
+               entretien_par_jour=True, frais_repas=4.0, 
                jours_semaine=[1, 1, 1, 1, 1, 0, 0], n_heures_jour=7,
                n_semaines_an=45, n_mois_mensualisation=12):
 
       self.taux_h = taux_horaire
-      self.frais_j = frais_entretient
+      self.frais_entretien = frais_entretien
+      self.entretien_par_jour = entretien_par_jour
       self.frais_repas = frais_repas
       self.n_heures_j = n_heures_jour
       self.n_jours_s = sum(jours_semaine)
@@ -93,7 +96,7 @@ class contrat:
 
   # Cout journalier prevu par le contrat
   def cout_journalier(self):
-      return self.taux_h * self.n_heures_j + self.frais_j + self.frais_repas
+      return self.taux_h * self.n_heures_j + self.frais_entretien_journalier() + self.frais_repas
 
 
   # Cout annuel prevu par le contrat
@@ -110,6 +113,16 @@ class contrat:
   def cout_journalier_charges(self):
       return self.taux_h * self.n_heures_j
 
+    
+  # Frais entretien journaliers
+  def frais_entretien_journalier(self, n_heures=None):
+      if self.entretien_par_jour:
+          return self.frais_entretien
+      elif n_heures:
+          return self.frais_entretien * n_heures
+      else:
+          return self.frais_entretien * self.n_heures_j
+    
 
   # Cout annuel pris en compte pour le calcul des conges payes
   def cout_annuel_charges(self):
@@ -148,8 +161,7 @@ class contrat:
       if n_jours_prevus != len(d.n_repas_jour):
         err = 'donnees_presence: Il y a {} jours travailles (du {} au {} avec {}j/sem ), et {} info repas.'
         err = err.format(n_jours_prevus, d.debut, d.fin, self.n_jours_s ,len(d.n_repas_jour))
-        raise NameError(err)
-        
+        raise NameError(err)        
       
       # Analyse des jours de presence un par un
       garde, entretien, repas = 0, 0, 0
@@ -163,7 +175,7 @@ class contrat:
 
           # Frais d'entretiens dus uniquement pour les jours de presence
           if Nheures > 0:
-             entretien += self.frais_j
+             entretien += self.frais_entretien_journalier(Nheures)
 
           # Repas
           if AvecRepas:
