@@ -9,67 +9,100 @@ class donnees_presence:
     - nombre de jours travailles
     - nombre de semaines completes / incompletes 
   '''
-
+  
   def __init__(self,
                date_debut, date_fin,
                heures_effectuees_par_jours,
                repas_pris_par_jours,
                jours_feries=0,
                nom_fichier_donnees=None):
+    
+    '''
+    date_debut, date_fin: 'AA-MM-DD'
+    heures_effectuees_par_jours: liste de float (len=nombre de jours travaille prevus)
+    repas_pris_par_jours: liste de boolean (len=nombre de jours travailles prevus)
+    nom_fichier_donnees: nom de fichier CSV - a implementer
+    '''
+    
+    # Info manuelles
+    self.debut = date_debut
+    self.fin = date_fin
+    self.jours_feries = jours_feries
+    self.n_heures_jour = heures_effectuees_par_jours
+    self.n_repas_jour = repas_pris_par_jours
+    
+    # Info passee par un fichier csv
+    if nom_fichier_donnees:
+      self.lire_donnees(nom_fichier_donnees)
       
-      '''
-      date_debut, date_fin: 'AA-MM-DD'
-      heures_effectuees_par_jours: liste de float (len=nombre de jours ouvres)
-      repas_pris_par_jours: liste de boolean (len=nombre de jours ouvres)
-      nom_fichier_donnees: nom de fichier CSV - a implementer
-      '''
+    # Nombre de jours total
+    self.n_jours = (np.datetime64(self.fin) - np.datetime64(self.debut)) / np.timedelta64(1,'D') + 1
 
-      # Info manuelles
-      self.debut = date_debut
-      self.fin = date_fin
-      self.jours_feries = jours_feries
-      self.n_heures_jour = heures_effectuees_par_jours
-      self.n_repas_jour = repas_pris_par_jours
-
-      # Info passee par un fichier csv
-      if nom_fichier_donnees:
-         self.lire_donnees(nom_fichier_donnees)
-
-      # Calcul jours/semaines entieres/terminees/entammees
-      self.n_jours = (np.datetime64(self.fin) - np.datetime64(self.debut)) / np.timedelta64(1,'D') + 1
-      self.n_jours_ouvres = self.N_jours_ouvres()
-      self.n_jours_semaine1 = self.N_jours_semaine1()
-      self.n_jours_semaineN = self.N_jours_semaineN()
-      self.n_semaines_completes = self.N_semaines_completes()
-      
-
+    
   def N_jours_ouvres(self):
-      return np.busday_count(self.debut, self.fin) - self.jours_feries
+    return np.busday_count(self.debut, self.fin) - self.jours_feries
 
-
+  
   def N_jours_semaine1(self):
-      premier_lundi = np.busday_offset(self.debut, 0, roll='forward', weekmask='Mon')
-      dt = (np.datetime64(premier_lundi) - np.datetime64(self.debut)) / np.timedelta64(1,'D')
-      return dt
-
+    premier_lundi = np.busday_offset(self.debut, 0, roll='forward', weekmask='Mon')
+    dt = (np.datetime64(premier_lundi) - np.datetime64(self.debut)) / np.timedelta64(1,'D')
+    return dt
+  
     
   def N_jours_semaineN(self):
-      dernier_dimanche = np.busday_offset(self.fin, 0, roll='backward', weekmask='Sun')
-      dt = (np.datetime64(self.fin) - np.datetime64(dernier_dimanche)) / np.timedelta64(1,'D')
-      return dt
-    
-    
-  def N_semaines_completes(self):
-      Ntot = self.n_jours 
-      Ndebut = self.N_jours_semaine1()
-      Nfin = self.N_jours_semaineN()
-      Nsemaines = (Ntot - (Ndebut+Nfin)) // 7
-      if (Ntot - (Ndebut+Nfin)) % 7 !=0 :
-         raise NameError('donnees_presence(): Nombre de semaine non entiere, attention!')
-      else: 
-         return Nsemaines
-      
+    dernier_dimanche = np.busday_offset(self.fin, 0, roll='backward', weekmask='Sun')
+    dt = (np.datetime64(self.fin) - np.datetime64(dernier_dimanche)) / np.timedelta64(1,'D')
+    return dt
 
+  
+  def N_semaines_completes(self):
+    Ntot = self.n_jours 
+    Ndebut = self.N_jours_semaine1()
+    Nfin = self.N_jours_semaineN()
+    Nsemaines = (Ntot - (Ndebut+Nfin)) // 7
+    if (Ntot - (Ndebut+Nfin)) % 7 !=0 :
+      raise NameError('donnees_presence(): Nombre de semaine non-entier, alors que ca ne devrait pas!')
+    else: 
+      return int(Nsemaines)
+
+    
+  def N_semaines_incompletes(self):
+    return int(self.N_jours_semaine1()>0) + int(self.N_jours_semaineN()>0)
+
+
+  def indice_semaine_entiere_du_jour(self, j, weekmask):
+    '''
+    Calcul l'indice de la semaine entiere de la periode, 
+    a laquelle le jour j appartient (en fonction du nombre de jour travailles)
+    retourne int, bool: indice de la semaine, si elle est complete ou non
+    '''
+
+    if len(weekmask) != 7:
+      raise NameError('weekmask doit etre contenir 7 elements (0 ou 1): ', weekmask)
+
+    # Premier semaine (eventuellement incomplete)
+    premier_lundi = np.busday_offset(self.debut, 0, roll='forward', weekmask='Mon')
+    n_jours_prevus_1 = np.busday_count(self.debut, premier_lundi, weekmask=weekmask)
+
+    # Derniere semaine (eventuellement incomplete)
+    dernier_dimanche = np.busday_offset(self.fin, 0, roll='backward', weekmask='Sun')
+    n_jours_prevus_N = np.busday_count(dernier_dimanche, self.fin, weekmask=weekmask)
+
+    # Semaines completes au milieu
+    n_jours_prevus = np.busday_count(premier_lundi, dernier_dimanche, weekmask=weekmask)
+
+    if j<n_jours_prevus_1:
+      isemaine, complete = 0, False
+
+    elif j<n_jours_prevus_1+n_jours_prevus:
+      isemaine, complete = (j+1) // sum(weekmask), True
+
+    else:
+      isemaine, complete = self.N_semaines_completes() + 1, False
+
+    return isemaine, complete
+      
+      
   def lire_donnees(self, nom_fichier):
       pass
     
@@ -81,6 +114,7 @@ class contrat:
                taux_horaire=3.5, frais_entretien=3.10,
                entretien_par_jour=True, frais_repas=4.0, 
                jours_semaine=[1, 1, 1, 1, 1, 0, 0], n_heures_jour=7,
+               taux_heures_supplementaires=1.50,
                n_semaines_an=45, n_mois_mensualisation=12):
 
       self.taux_h = taux_horaire
@@ -153,10 +187,10 @@ class contrat:
 
       # Coherence des donnees fournies
       n_jours_prevus = np.busday_count(d.debut, d.fin, weekmask=self.jours_semaine)
-      if  n_jours_prevus != len(d.n_heures_jour):
-         err = 'donnees_presence: Il y a {} jours travailles (du {} au {} avec {}j/sem ), et {} horaires fournis.'
-         err = err.format(n_jours_prevus, d.debut, d.fin, self.n_jours_s ,len(d.n_heures_jour))
-         raise NameError(err)
+      if n_jours_prevus != len(d.n_heures_jour):
+        err = 'donnees_presence: Il y a {} jours travailles (du {} au {} avec {}j/sem ), et {} horaires fournis.'
+        err = err.format(n_jours_prevus, d.debut, d.fin, self.n_jours_s ,len(d.n_heures_jour))
+        raise NameError(err)
 
       if n_jours_prevus != len(d.n_repas_jour):
         err = 'donnees_presence: Il y a {} jours travailles (du {} au {} avec {}j/sem ), et {} info repas.'
@@ -165,20 +199,34 @@ class contrat:
       
       # Analyse des jours de presence un par un
       garde, entretien, repas = 0, 0, 0
-      for Nheures, AvecRepas in zip(d.n_heures_jour, d.n_repas_jour):
+      heures_semaine = [[0, False] for i in range((d.N_semaines_completes() + d.N_semaines_incompletes()))]
+      for ijour, (Nheures, AvecRepas) in enumerate(zip(d.n_heures_jour, d.n_repas_jour)):
 
-          # Une journee prevue non effectuee est due, une journee plus longue 
-          # se paie mais une journee plus courte reste due dans son entier.
-          garde += self.taux_h * self.n_heures_j
-          if Nheures > self.n_heures_j:
-             garde += self.taux_h * (Nheures-self.n_heures_j)
+        # Decompte des heures par semaine (heures complementaires/supplementaires)
+        isemaine, est_complete = d.indice_semaine_entiere_du_jour(ijour, self.jours_semaine)
+        heures_semaine[isemaine][0] += Nheures
+        heures_semaine[isemaine][1] = est_complete
+        
+        # Une journee prevue non effectuee (ou plus courte) est due dans son entier
+        garde += self.taux_h * self.n_heures_j
 
-          # Frais d'entretiens dus uniquement pour les jours de presence
-          if Nheures > 0:
-             entretien += self.frais_entretien_journalier(Nheures)
+        # Une journee plus longue conduit a un cout supplementaire
+        if Nheures > self.n_heures_j:
+          garde += self.taux_h * (Nheures-self.n_heures_j)
+            
+        # Frais d'entretiens dus uniquement pour les jours de presence
+        if Nheures > 0:
+          entretien += self.frais_entretien_journalier(Nheures)
+              
+        # Repas
+        if AvecRepas:
+          repas += self.frais_repas
 
-          # Repas
-          if AvecRepas:
-             repas += self.frais_repas
-
+      # Affiche les heures supplementaires
+      for i, (n, complete) in enumerate(heures_semaine):
+        if complete:
+          ncomp = int(n>self.n_heures_j*sum(self.jours_semaine)) * (n-self.n_heures_j*sum(self.jours_semaine))
+          nsupp = int(n>45) * (n-45)  
+          print('semaine {} (complete): {} heures -> {} comp et {} supp'.format(i, n, ncomp, nsupp))
+          
       return garde + entretien + repas

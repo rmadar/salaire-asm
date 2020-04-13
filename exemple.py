@@ -22,13 +22,13 @@ avril_absence = asm.donnees_presence(date_debut = '20-04-01',
 
 avril_presence = asm.donnees_presence(date_debut = '20-04-01',
                                       date_fin = '20-04-30',
-                                      heures_effectuees_par_jours = [7]*13,
+                                      heures_effectuees_par_jours = [15.5]*13,
                                       repas_pris_par_jours = [False]*13)
 
-print('\nAvril:')
-print('  - {:.0f} jours de fin de semaine'.format(avril_absence.n_jours_semaine1))
-print('  - {:.0f}x7 jours de semaines completes'.format(avril_absence.n_semaines_completes))
-print('  - {:.0f} jours de debut de semaine'.format(avril_absence.n_jours_semaineN))
+print('\nAvril ({} semaines incompletes et {} completes):'.format(avril_absence.N_semaines_incompletes(), avril_absence.N_semaines_completes()))
+print('  - {:.0f} jours de fin de semaine'.format(avril_absence.N_jours_semaine1()))
+print('  - {:.0f}x7 jours de semaines completes'.format(avril_absence.N_semaines_completes()))
+print('  - {:.0f} jours de debut de semaine'.format(avril_absence.N_jours_semaineN()))
 print('  - cout reel Avril si absence : {:.2f} Euros'.format(ChristineD.cout_reel_periode(avril_absence)))
 print('  - cout reel Avril si presence: {:.2f} Euros'.format(ChristineD.cout_reel_periode(avril_presence)))
 
