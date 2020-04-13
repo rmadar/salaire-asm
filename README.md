@@ -7,7 +7,7 @@ Ce depot contient un programme python capable de calculer le salaire d'une ASM e
 ```python
 MaNounou = asm.contrat(
 
-    # Cout horaire
+    # Cout horaire net
     taux_horaire = 3.5, 
 
     # Frais d'entretien (par jour ou par heure)
@@ -29,4 +29,10 @@ MaNounou = asm.contrat(
     # Nombre de mois utilise pour mensualiser
     n_mois_mensualisation = 12
 )
+```
+
+Le calcul du cout mensualise ou encore des conges payes est ensuite fait en interne:
+```python
+salaire_mensuel = MaNounou.cout_mensualise()
+conges_payes_mois = MaNounou.conges_payes_mensualises()
 ```
