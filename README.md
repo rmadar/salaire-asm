@@ -8,7 +8,7 @@ Ce depot contient un programme python capable de calculer le salaire d'une ASM e
 MaNounou = asm.contrat(
 
     # Cout horaire
-    taux_horaire          = 3.5, 
+    taux_horaire = 3.5, 
 
     # Frais d'entretien (par jour ou par heure)
     frais_entretien = 3.10,
