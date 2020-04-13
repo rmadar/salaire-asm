@@ -9,7 +9,8 @@ MaNounou = asm.contrat(
 
     # Cout horaire net
     taux_horaire = 3.5, 
-
+    aug_heure_supp = 1.50,
+    
     # Frais d'entretien (par jour ou par heure)
     frais_entretien = 3.10,
     entretien_par_jour = True,
@@ -59,4 +60,14 @@ Avril (2 semaines incompletes et 3 completes):
   - 3x7 jours de semaines completes
   - 4 jours de debut de semaine
   - cout reel Avril si (sur)presence: 495.30 Euros
+```
+
+### Calcul des heures complementaires et supplementaires
+
+La fonction `cout_reel_periode()` fait un decompte des heures complementaires et supplementaires sur les semaines completes,
+et mentionne les semaines incompletes. Pour les trois semaines completes de l'exemple ci-dessus:
+```
+semaine 1 (complete): 30 heures -> 9 comp et 0 supp
+semaine 2 (complete): 30 heures -> 9 comp et 0 supp
+semaine 3 (complete): 30 heures -> 9 comp et 0 supp
 ```
