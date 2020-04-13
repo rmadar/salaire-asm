@@ -42,17 +42,6 @@ class donnees_presence:
       self.n_jours_semaineN = self.N_jours_semaineN()
       self.n_semaines_completes = self.N_semaines_completes()
       
-      # Coherence des donnees fournies
-      if self.n_jours_ouvres != len(self.n_heures_jour):
-         err = 'donnees_presence: Il y a {} jours ouvres ({} - {}), et {} horaires fournis.'
-         err = err.format(self.n_jours_ouvres, self.debut, self.fin, len(self.n_heures_jour))
-         raise NameError(err)
-
-      if self.n_jours_ouvres != len(self.n_repas_jour):
-         err = 'donnees_presence: Il y a {} jours ouvres ({} - {}), et {} info de repas.'
-         err = err.format(self.n_jours_ouvres, self.debut, self.fin, len(self.n_repas_jour))
-         raise NameError(err)
-        
 
   def N_jours_ouvres(self):
       return np.busday_count(self.debut, self.fin) - self.jours_feries
@@ -89,14 +78,15 @@ class contrat:
 
   def __init__(self, 
                taux_horaire=3.5, frais_entretient=3.10, frais_repas=4.0,
-               n_jours_semaine=3, n_heures_jour=7,
+               jours_semaine=[1, 1, 1, 1, 1, 0, 0], n_heures_jour=7,
                n_semaines_an=45, n_mois_mensualisation=12):
 
       self.taux_h = taux_horaire
       self.frais_j = frais_entretient
       self.frais_repas = frais_repas
       self.n_heures_j = n_heures_jour
-      self.n_jours_s = n_jours_semaine
+      self.n_jours_s = sum(jours_semaine)
+      self.jours_semaine = jours_semaine
       self.n_semaines_an = n_semaines_an
       self.n_mois_mensualisation = n_mois_mensualisation
 
@@ -139,29 +129,31 @@ class contrat:
 
 
   # Calcul du cout reel sur une periode donnee avec presence effectives
-  def cout_reel_periode(self, n_jours_prevus, donnees_presence):
+  def cout_reel_periode(self, donnees_periode):
       '''
       Calcul le cout reel sur une periode precise compte tenu des heures
       de presence reelles.
 
-      n_jours_prevus (int): nombre de jours de presence supposee par le contrat.
-      donnees_presence (list): liste de taille n_jours_prevus dont chaque element
-                               est [nbr heure effective (float), repas pris bool)]
+      donnees_periode (asm.donnees_presence)
       '''
+      d = donnees_periode
 
-      # Verifier que les donnees presentielles fournies sont coherentes
-      if len(donnees_presence) != n_jours_prevus:
-         err =  'ContratASM.cout_reel_periode(): \n \t la taille de la liste de presence'
-         err += ' effective (ici, {}) n\'est \n \t pas egale au nombre de jours prevus (ici, {}).'
-         print(err.format(len(donnees_presence), n_jours_prevus))
-         return -1 
+      # Coherence des donnees fournies
+      n_jours_prevus = np.busday_count(d.debut, d.fin, weekmask=self.jours_semaine)
+      if  n_jours_prevus != len(d.n_heures_jour):
+         err = 'donnees_presence: Il y a {} jours travailles (du {} au {} avec {}j/sem ), et {} horaires fournis.'
+         err = err.format(n_jours_prevus, d.debut, d.fin, self.n_jours_s ,len(d.n_heures_jour))
+         raise NameError(err)
 
+      if n_jours_prevus != len(d.n_repas_jour):
+        err = 'donnees_presence: Il y a {} jours travailles (du {} au {} avec {}j/sem ), et {} info repas.'
+        err = err.format(n_jours_prevus, d.debut, d.fin, self.n_jours_s ,len(d.n_repas_jour))
+        raise NameError(err)
+        
+      
       # Analyse des jours de presence un par un
       garde, entretien, repas = 0, 0, 0
-      for journee in donnees_presence:
-
-          # Nombre d'heures et repas
-          Nheures, AvecRepas = journee
+      for Nheures, AvecRepas in zip(d.n_heures_jour, d.n_repas_jour):
 
           # Une journee prevue non effectuee est due, une journee plus longue 
           # se paie mais une journee plus courte reste due dans son entier.
